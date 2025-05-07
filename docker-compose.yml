@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:latest
+    container_name: mongo_db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER} # Use variable from .env.backend.dev
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS} # Use variable from .env.backend.dev
+      MONGO_INITDB_DATABASE: spaced_repetition # Database name used in backend/database.py
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - "27017:27017" # Optional: Map port for external access if needed
+
+  backend:
+    build: ./backend
+    container_name: backend_service
+    env_file:
+      - .env.backend.dev # Load environment variables from this file
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app # Mount local backend code for development hot-reloading
+    depends_on:
+      - mongo
+    environment:
+      # Provide the connection details directly to the backend app
+      # Note: database.py uses MONGO_DETAILS, not MONGO_URI
+      MONGO_DETAILS: mongodb://${MONGO_USER}:${MONGO_PASS}@mongo:27017 # Construct connection string
+      # PYTHONUNBUFFERED: 1 # Often useful for seeing logs immediately
+
+  frontend:
+    build: ./frontend
+    container_name: frontend_service
+    ports:
+      - "3000:80" # Map host 3000 to container 80 (Nginx default)
+    volumes:
+      - ./frontend/src:/app/src # Mount src for development (if using dev server) - Note: Nginx build doesn't use this directly
+      # For Nginx serving static files, mounting isn't typically needed unless you rebuild often
+    depends_on:
+      - backend
+
+volumes:
+  mongo-data:
+    driver: local # Define the volume driver (local is default)

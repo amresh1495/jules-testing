@@ -1,194 +1,95 @@
-# Employee Management API
+# LeetCode Anki Revision App
 
 ## Description
 
-A simple Flask-based REST API for managing employee records. It allows creating, reading, updating, and deleting employee information stored in memory.
+This is a full-stack web application designed to help users revise LeetCode problems using the spaced repetition technique, similar to Anki flashcards. It allows users to add coding problems, track their solutions, and schedule reviews at increasing intervals (2, 4, 8, 16, 30 days).
 
-## Setup Instructions
+## Features
+
+*   View questions scheduled for revision today on the homepage.
+*   Add new LeetCode questions with their solutions.
+*   View individual question details and solutions.
+*   Update question solutions.
+*   Schedule the next revision date based on spaced repetition intervals (2, 4, 8, 16, 30 days).
+*   Delete questions from the bank.
+*   Containerized deployment using Docker.
+
+## Technologies Used
+
+*   **Frontend:** React, React Router, Axios
+*   **Backend:** FastAPI (Python), Motor (Async MongoDB Driver), Pydantic
+*   **Database:** MongoDB
+*   **Containerization:** Docker, Docker Compose
+*   **Backend Testing:** Pytest, HTTPX, Pytest-Asyncio
+
+## Prerequisites
+
+*   Docker: [https://docs.docker.com/get-docker/](https://docs.docker.com/get-docker/)
+*   Docker Compose: (Usually included with Docker Desktop) [https://docs.docker.com/compose/install/](https://docs.docker.com/compose/install/)
+
+## Setup & Running
 
 1.  **Clone the repository:**
     ```bash
-    git clone <repository_url>
-    cd <repository_directory>
+    git clone <repository-url>
+    cd <repository-directory>
     ```
 
-2.  **Create and activate a virtual environment (optional but recommended):**
+2.  **Environment Variables:**
+    The application uses a `.env.backend.dev` file to configure the MongoDB connection for the backend service when running via Docker Compose. The `MONGO_USER` and `MONGO_PASS` variables from this file are used by `docker-compose.yml` to set up the MongoDB container and construct the `MONGO_DETAILS` connection string for the backend service. Ensure the database name in `MONGO_DETAILS` (`spaced_repetition`) matches the one used in the backend code (`backend/app/database.py`) and `MONGO_INITDB_DATABASE` in `docker-compose.yml`.
+
+    *Default `.env.backend.dev`:*
+    ```env
+    MONGO_USER=mongo_user
+    MONGO_PASS=mongo_pass
+    ```
+
+    *Connection string constructed in `docker-compose.yml`:*
+    `MONGO_DETAILS=mongodb://${MONGO_USER}:${MONGO_PASS}@mongo:27017/spaced_repetition?authSource=admin`
+
+3.  **Build and Run with Docker Compose:**
+    This command will build the Docker images for the frontend and backend (if they don't exist) and start the frontend, backend, and MongoDB containers in detached mode.
+
     ```bash
-    python -m venv venv
-    # On Windows
-    venv\Scripts\activate
-    # On macOS/Linux
-    source venv/bin/activate
+    docker-compose up --build -d
     ```
 
-3.  **Install dependencies:**
+4.  **Access the Application:**
+    *   **Frontend:** Open your browser and navigate to `http://localhost:3000`
+    *   **Backend API Docs:** Open your browser and navigate to `http://localhost:8000/docs`
+
+5.  **Stopping the Application:**
     ```bash
-    pip install -r requirements.txt
+    docker-compose down
     ```
 
-## Running the Application
+## Running Backend Tests
 
-To run the Flask development server:
+To run the backend unit and integration tests, use the following Docker Compose command:
 
 ```bash
-python run.py
+docker-compose run --rm backend pytest tests/
 ```
+This command starts a temporary container for the backend service, installs development dependencies (using `requirements-dev.txt`), and executes the tests located in the `backend/tests` directory. The `--rm` flag ensures the container is removed after the tests finish. Make sure your `requirements-dev.txt` is present in the `backend` directory.
 
-The API will be available at `http://127.0.0.1:5000`.
+## Project Structure (Simplified)
 
-## Running Tests
-
-To run the unit tests using pytest:
-
-```bash
-pytest
 ```
-
-## API Endpoints
-
-The base URL is `http://127.0.0.1:5000`.
-
-### Create Employee
-
-*   **Method:** `POST`
-*   **Path:** `/employees`
-*   **Description:** Adds a new employee record.
-*   **Request Body (JSON):**
-    ```json
-    {
-        "name": "John Doe",
-        "position": "Software Developer",
-        "department": "Engineering"
-    }
-    ```
-*   **Response (Success - 201 Created):**
-    ```json
-    {
-        "id": 3, # ID will vary based on current state
-        "name": "John Doe",
-        "position": "Software Developer",
-        "department": "Engineering"
-    }
-    ```
-*   **Response (Error - 400 Bad Request):** If required fields are missing.
-    ```json
-    {
-        "error": "Missing data for required fields: name, position, department"
-    }
-    ```
-
-### Get All Employees
-
-*   **Method:** `GET`
-*   **Path:** `/employees`
-*   **Description:** Retrieves a list of all employees.
-*   **Response (Success - 200 OK):**
-    ```json
-    [
-        {
-            "id": 1,
-            "name": "Alice",
-            "position": "Software Engineer",
-            "department": "Technology"
-        },
-        {
-            "id": 2,
-            "name": "Bob",
-            "position": "Data Scientist",
-            "department": "Analytics"
-        }
-        # Initial sample data
-    ]
-    ```
-
-### Get Specific Employee
-
-*   **Method:** `GET`
-*   **Path:** `/employees/<employee_id>`
-*   **Description:** Retrieves details for a specific employee by their ID.
-*   **URL Parameters:**
-    *   `employee_id` (integer): The unique ID of the employee.
-*   **Response (Success - 200 OK):**
-    ```json
-    {
-        "id": 1,
-        "name": "Alice",
-        "position": "Software Engineer",
-        "department": "Technology"
-    }
-    ```
-*   **Response (Error - 404 Not Found):** If the employee ID does not exist.
-    ```json
-    {
-        "error": "Employee not found"
-    }
-    ```
-
-### Update Employee
-
-*   **Method:** `PUT`
-*   **Path:** `/employees/<employee_id>`
-*   **Description:** Updates details for an existing employee. Fields not provided in the request body will remain unchanged.
-*   **URL Parameters:**
-    *   `employee_id` (integer): The unique ID of the employee to update.
-*   **Request Body (JSON):** (Include fields to update)
-    ```json
-    {
-        "position": "Senior Software Engineer",
-        "department": "Core Engineering"
-    }
-    ```
-*   **Response (Success - 200 OK):**
-    ```json
-    {
-        "id": 1,
-        "name": "Alice", // Unchanged
-        "position": "Senior Software Engineer", // Updated
-        "department": "Core Engineering" // Updated
-    }
-    ```
-*   **Response (Error - 404 Not Found):** If the employee ID does not exist.
-    ```json
-    {
-        "error": "Employee not found"
-    }
-    ```
-*   **Response (Error - 400 Bad Request):** If the request body is empty.
-    ```json
-    {
-        "error": "Request body cannot be empty"
-    }
-    ```
-
-### Delete Employee
-
-*   **Method:** `DELETE`
-*   **Path:** `/employees/<employee_id>`
-*   **Description:** Deletes an employee record by their ID.
-*   **URL Parameters:**
-    *   `employee_id` (integer): The unique ID of the employee to delete.
-*   **Response (Success - 200 OK):**
-    ```json
-    {
-        "message": "Employee deleted successfully"
-    }
-    ```
-*   **Response (Error - 404 Not Found):** If the employee ID does not exist.
-    ```json
-    {
-        "error": "Employee not found"
-    }
-    ```
-
-## Deployment
-
-A `Dockerfile` is included in the project root for building a container image of the application. You can build and run the container using Docker.
-
-```bash
-# Build the image
-docker build -t employee-api .
-
-# Run the container
-docker run -p 5000:5000 employee-api
+.
+├── backend/              # FastAPI backend source code, tests, Dockerfile, requirements*.txt
+│   ├── app/
+│   ├── tests/
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   └── requirements-dev.txt
+├── frontend/             # React frontend source code, Dockerfile, nginx.conf
+│   ├── public/
+│   ├── src/
+│   ├── Dockerfile
+│   ├── nginx.conf
+│   └── package.json
+├── .env.backend.dev      # Backend environment variables for Docker Compose
+├── .dockerignore         # Root dockerignore (if needed)
+├── docker-compose.yml    # Docker Compose configuration
+└── README.md             # This file
 ```
-The API will then be accessible at `http://localhost:5000`.
